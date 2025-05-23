@@ -2,11 +2,11 @@ import { ThorchainProviderMethod } from '@clients/extension/src/types/thorchain'
 import { ThorchainProviderResponse } from '@clients/extension/src/types/thorchain'
 import { Chain } from '@core/chain/Chain'
 import { ParsedMemoParams } from '@core/chain/chains/evm/tx/getParsedMemo'
-import { KeysignResponse } from '@core/chain/tx/signature/generateSignature'
+import { KeysignSignature } from '@core/mpc/keysign/KeysignSignature'
+import { IMsgTransfer } from '@core/mpc/keysign/preSignedInputData/ibc/IMsgTransfer'
+import { Vault } from '@core/ui/vault/Vault'
 import { WalletCore } from '@trustwallet/wallet-core'
 import { TransactionResponse } from 'ethers'
-
-import { Currency, Language } from './constants'
 
 export namespace Messaging {
   export namespace Chain {
@@ -21,12 +21,12 @@ export namespace Messaging {
 
   export namespace GetVault {
     export type Request = any
-    export type Response = VaultProps | undefined
+    export type Response = VaultExport | undefined
   }
 
   export namespace GetVaults {
     export type Request = any
-    export type Response = VaultProps[]
+    export type Response = VaultExport[]
   }
 
   export namespace SetPriority {
@@ -35,20 +35,17 @@ export namespace Messaging {
   }
 }
 
+export type VaultExport = {
+  uid: string
+  name: string
+  publicKeyEcdsa: string
+  publicKeyEddsa: string
+  hexChainCode: string
+}
+
 export interface AccountsProps {
   chain: Chain
   sender: string
-}
-
-export interface ChainProps {
-  active?: boolean
-  address?: string
-  cmcId?: number
-  decimals: number
-  derivationKey?: string
-  id: string
-  chain: Chain
-  ticker: string
 }
 
 export interface SendTransactionResponse {
@@ -56,123 +53,34 @@ export interface SendTransactionResponse {
   txResponse: string
 }
 
-export interface ChainObjRef {
-  [Chain.Arbitrum]: ChainProps
-  [Chain.Avalanche]: ChainProps
-  [Chain.Base]: ChainProps
-  [Chain.Bitcoin]: ChainProps
-  [Chain.BitcoinCash]: ChainProps
-  [Chain.Blast]: ChainProps
-  [Chain.BSC]: ChainProps
-  [Chain.CronosChain]: ChainProps
-  [Chain.Dash]: ChainProps
-  [Chain.Dogecoin]: ChainProps
-  [Chain.Dydx]: ChainProps
-  [Chain.Ethereum]: ChainProps
-  [Chain.Cosmos]: ChainProps
-  [Chain.Kujira]: ChainProps
-  [Chain.Litecoin]: ChainProps
-  [Chain.MayaChain]: ChainProps
-  [Chain.Optimism]: ChainProps
-  [Chain.Osmosis]: ChainProps
-  [Chain.Polygon]: ChainProps
-  [Chain.Solana]: ChainProps
-  [Chain.THORChain]: ChainProps
-}
-
-export interface ChainStrRef {
-  [Chain.Arbitrum]: string
-  [Chain.Avalanche]: string
-  [Chain.Base]: string
-  [Chain.Bitcoin]: string
-  [Chain.BitcoinCash]: string
-  [Chain.Blast]: string
-  [Chain.BSC]: string
-  [Chain.CronosChain]: string
-  [Chain.Dash]: string
-  [Chain.Dogecoin]: string
-  [Chain.Dydx]: string
-  [Chain.Ethereum]: string
-  [Chain.Cosmos]: string
-  [Chain.Kujira]: string
-  [Chain.Litecoin]: string
-  [Chain.MayaChain]: string
-  [Chain.Optimism]: string
-  [Chain.Osmosis]: string
-  [Chain.Polkadot]: string
-  [Chain.Polygon]: string
-  [Chain.Solana]: string
-  [Chain.Sui]: string
-  [Chain.THORChain]: string
-  [Chain.Terra]: string
-  [Chain.TerraClassic]: string
-  [Chain.Ton]: string
-  [Chain.Ripple]: string
-  [Chain.Zksync]: string
-  [Chain.Noble]: string
-  [Chain.Akash]: string
-  [Chain.Tron]: string
-}
-
-export interface CurrencyRef {
-  [Currency.AUD]: string
-  [Currency.CAD]: string
-  [Currency.CNY]: string
-  [Currency.EUR]: string
-  [Currency.GBP]: string
-  [Currency.JPY]: string
-  [Currency.RUB]: string
-  [Currency.SEK]: string
-  [Currency.SGD]: string
-  [Currency.USD]: string
-}
-
-export interface CustomMessage {
+interface CustomMessage {
   method: string
   address: string
   message: string
 }
 
-export interface SignatureProps {
-  Msg: string
-  R: string
-  S: string
-  DerSignature: string
-  RecoveryID: string
-}
-
-export interface LanguageRef {
-  [Language.CROATIA]: string
-  [Language.DUTCH]: string
-  [Language.ENGLISH]: string
-  [Language.GERMAN]: string
-  [Language.ITALIAN]: string
-  [Language.PORTUGUESE]: string
-  [Language.RUSSIAN]: string
-  [Language.SPANISH]: string
-}
-
-export interface ScreenProps {
-  height: number
-  width: number
-}
-
 export namespace TransactionType {
-  export interface MetaMask {
-    txType: 'MetaMask'
+  export type TxType = 'MetaMask' | 'Ctrl' | 'Vultisig' | 'Keplr' | 'Phantom'
+
+  interface BaseTransaction<T extends TxType> {
+    txType: T
+  }
+
+  export interface MetaMask extends BaseTransaction<'MetaMask'> {
     from: string
     to: string
     value?: string
     data: string
     gas?: string
     gasPrice?: string
+    maxFeePerGas?: string
+    maxPriorityFeePerGas?: string
     nonce?: string
     chainId?: string
     type?: string
   }
 
-  export interface Ctrl {
-    txType: 'Ctrl'
+  export interface Ctrl extends BaseTransaction<'Ctrl'> {
     amount: {
       amount: string
       decimals: number
@@ -188,8 +96,7 @@ export namespace TransactionType {
     recipient: string
   }
 
-  export interface Vultisig {
-    txType: 'Vultisig'
+  export interface Vultisig extends BaseTransaction<'Vultisig'> {
     asset: {
       chain: Chain
       ticker: string
@@ -202,15 +109,13 @@ export namespace TransactionType {
     gasLimit?: string
   }
 
-  export interface Keplr {
-    txType: 'Keplr'
+  export interface Keplr extends BaseTransaction<'Keplr'> {
     amount: { amount: string; denom: string }[]
     from_address: string
     to_address: string
   }
 
-  export interface Phantom {
-    txType: 'Phantom'
+  export interface Phantom extends BaseTransaction<'Phantom'> {
     asset: {
       chain: Chain
       ticker?: string
@@ -236,12 +141,18 @@ export interface TransactionDetails {
   to?: string
   amount?: { amount: string; decimals: number }
   data?: string
-  gasLimit?: string
+  gasSettings?: {
+    gasLimit?: string
+    gasPrice?: string
+    maxFeePerGas?: string
+    maxPriorityFeePerGas?: string
+  }
+  ibcTransaction?: IMsgTransfer
 }
 
 export interface ITransaction {
   transactionDetails: TransactionDetails
-  chain: ChainProps
+  chain: Chain
   contract?: string
   customMessage?: CustomMessage
   customSignature?: string
@@ -263,99 +174,12 @@ export interface ITransaction {
   raw?: any
 }
 
-export interface VaultProps {
-  active?: boolean
-  apps?: string[]
-  chains: ChainProps[]
-  hexChainCode: string
-  name: string
-  publicKeyEcdsa: string
-  publicKeyEddsa: string
-  selected?: boolean
-  transactions: ITransaction[]
-  uid: string
-}
-
-export interface ThorchainAccountDataResponse {
-  address: string
-  publicKey: {
-    type: string
-    value: string
-  }
-  accountNumber: string
-  sequence: string
-}
-
-export interface MayaAccountDataResponse {
-  address: string
-  publicKey: {
-    type: string
-    value: string
-  }
-  accountNumber: string
-  sequence: string
-}
-
-export interface BaseSpecificTransactionInfo {
-  gasPrice: number
-  fee: number
-}
-
-export interface SpecificThorchain extends BaseSpecificTransactionInfo {
-  accountNumber: number
-  sequence: number
-  isDeposit: boolean
-}
-
-export interface SpecificCosmos extends BaseSpecificTransactionInfo {
-  accountNumber: number
-  sequence: number
-  gas: number
-  transactionType: number
-}
-
-export interface SpecificThorchain {
-  fee: number
-  gasPrice: number
-  accountNumber: number
-  sequence: number
-  isDeposit: boolean
-}
-
-export interface CosmosAccountData {
-  accountNumber: string
-  sequence: string
-}
-
-export interface CosmosAccountDataResponse {
-  account: CosmosAccountData
-}
-
 export interface SignedTransaction {
   inputData?: Uint8Array
-  signatures: Record<string, KeysignResponse>
+  signatures: Record<string, KeysignSignature>
   transaction?: ITransaction
-  vault?: VaultProps
+  vault?: Vault
   walletCore: WalletCore
-}
-
-export interface SpecificUtxoInfo {
-  hash: string
-  amount: bigint
-  index: number
-}
-
-export interface SpecificUtxo extends BaseSpecificTransactionInfo {
-  byteFee: number
-  sendMaxAmount: boolean
-  utxos: SpecificUtxoInfo[]
-}
-
-export interface SpecificSolana extends BaseSpecificTransactionInfo {
-  recentBlockHash: string
-  priorityFee: number
-  fromAddressPubKey: string | undefined
-  toAddressPubKey: string | undefined
 }
 
 export interface FastSignInput {

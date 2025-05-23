@@ -1,6 +1,6 @@
 import { Chain, CosmosChain, EvmChain, OtherChain, UtxoChain } from '../Chain'
 
-export const chainIdRecord = {
+const chainIdRecord = {
   [EvmChain.Arbitrum]: '0xa4b1',
   [EvmChain.Avalanche]: '0xa86a',
   [EvmChain.Base]: '0x2105',
@@ -37,18 +37,13 @@ export const chainIdRecord = {
   [OtherChain.Tron]: '0x2b6653dc',
 } as const
 
-export type ChainId = (typeof chainIdRecord)[Chain]
-
-export type DeriveChainId<T> = T extends Chain
-  ? (typeof chainIdRecord)[T]
-  : never
+type DeriveChainId<T> = T extends Chain ? (typeof chainIdRecord)[T] : never
+type ChainIdRecord = typeof chainIdRecord
+export type EVMChainId = ChainIdRecord[EvmChain]
+export type CosmosChainId = ChainIdRecord[CosmosChain]
 
 export function getChainId<T extends Chain>(chain: T): DeriveChainId<T> {
   return chainIdRecord[chain] as DeriveChainId<T>
-}
-
-export function isSupportedChainId(chainId: string): chainId is ChainId {
-  return Object.values(chainIdRecord).includes(chainId as ChainId)
 }
 
 export function getChainByChainId(chainId: string): Chain | undefined {

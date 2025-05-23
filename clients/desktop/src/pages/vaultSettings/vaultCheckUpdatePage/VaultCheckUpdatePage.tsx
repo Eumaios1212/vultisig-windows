@@ -1,15 +1,14 @@
+import { ProductLogo } from '@core/ui/product/ProductLogo'
+import { useCore } from '@core/ui/state/core'
+import { PageHeader } from '@lib/ui/page/PageHeader'
+import { PageHeaderBackButton } from '@lib/ui/page/PageHeaderBackButton'
+import { PageSlice } from '@lib/ui/page/PageSlice'
+import { Text } from '@lib/ui/text'
 import { extractErrorMsg } from '@lib/utils/error/extractErrorMsg'
 import { ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 
-import { BrowserOpenURL } from '../../../../wailsjs/runtime/runtime'
 import useVersionCheck from '../../../lib/hooks/useVersionCheck'
-import { Text } from '../../../lib/ui/text'
-import { ProductLogo } from '../../../ui/logo/ProductLogo'
-import { PageHeader } from '../../../ui/page/PageHeader'
-import { PageHeaderBackButton } from '../../../ui/page/PageHeaderBackButton'
-import { PageSlice } from '../../../ui/page/PageSlice'
-import { VULTISIG_GITHUB_RELEASES_LINK } from '../constants'
 import {
   CenteredText,
   Content,
@@ -19,20 +18,14 @@ import {
 
 const VaultCheckUpdatePage = () => {
   const { t } = useTranslation()
-  const {
-    localVersion,
-    latestVersion,
-    updateAvailable,
-    isLocalVersionValid,
-    remoteError,
-    isLoading,
-  } = useVersionCheck()
+  const { latestVersion, updateAvailable, remoteError, isLoading } =
+    useVersionCheck()
+
+  const { openUrl, version } = useCore()
 
   let content: ReactNode
 
-  if (!isLocalVersionValid) {
-    content = t('vaultCheckUpdatePage.errorLoadingLocalVersion')
-  } else if (remoteError) {
+  if (remoteError) {
     content = t('vaultCheckUpdatePage.errorFetchingLatestVersion', {
       error: extractErrorMsg(remoteError),
     })
@@ -45,7 +38,7 @@ const VaultCheckUpdatePage = () => {
       <CenteredText>
         {t('vaultCheckUpdatePage.newVersionAvailable', { latestVersion })}
         <DownloadButton
-          onClick={() => BrowserOpenURL(VULTISIG_GITHUB_RELEASES_LINK)}
+          onClick={() => openUrl('https://vultisig.com/download/vultisig')}
         >
           {t('vaultCheckUpdatePage.downloadButton')}
         </DownloadButton>
@@ -68,7 +61,7 @@ const VaultCheckUpdatePage = () => {
           </Text>
           {!updateAvailable && (
             <Text color="contrast" size={14}>
-              {localVersion}
+              {version}
             </Text>
           )}
         </Content>

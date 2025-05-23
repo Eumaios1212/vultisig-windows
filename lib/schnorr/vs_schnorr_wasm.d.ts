@@ -36,12 +36,14 @@ export class KeyImportInitiator {
    *
    * * `private_key` - Private key to import
    *
+   * * `root_chain` - Optional root chain code
+   *
    * * `threshold` - Signature threshold
    *
    * * `ids` - List of human readable identifiers.
    *   The initiator is first in the list
    */
-  constructor(private_key: Uint8Array, threshold: number, ids: string[]);
+  constructor(private_key: Uint8Array, root_chain: Uint8Array | null | undefined, threshold: number, ids: string[]);
   /**
    * Get next output message. If no pending output message available,
    * `undefined` will be returned.
@@ -95,6 +97,22 @@ export class KeygenSession {
    * * `old_Share` - Old key share
    */
   static refresh(setup: Uint8Array, id: string, old_keyshare: Keyshare): KeygenSession;
+  /**
+   * Allocate new key migration session
+   *
+   * # Arguments
+   *
+   * * `setup`     - A setup message created by `KeygenSession.setup`
+   *
+   * * `id`        - A human readable party identifier
+   *
+   * * `s_i_0` - The additive share of the party such that Σ(s_i_0) = private key , 0<=i<=n
+   *
+   * * `publickey` - The generic common public key
+   *
+   * * `rootChainCode` - The root chain code
+   */
+  static migrate(setup: Uint8Array, id: string, s_i_0: Uint8Array, public_key: Uint8Array, root_chain_code: Uint8Array): KeygenSession;
   /**
    * Create a new DKG setup message.
    *
@@ -287,60 +305,65 @@ export type InitInput = RequestInfo | URL | Response | BufferSource | WebAssembl
 
 export interface InitOutput {
   readonly memory: WebAssembly.Memory;
-  readonly __wbg_keyexportsession_free: (a: number, b: number) => void;
-  readonly keyexportsession_new: (a: number, b: number, c: number) => number;
-  readonly keyexportsession_setup: (a: number, b: number) => void;
-  readonly keyexportsession_inputMessage: (a: number, b: number, c: number) => number;
-  readonly keyexportsession_finish: (a: number, b: number) => void;
-  readonly keyexportsession_exportShare: (a: number, b: number, c: number, d: number, e: number, f: number) => void;
-  readonly __wbg_keyimportinitiator_free: (a: number, b: number) => void;
-  readonly keyimportinitiator_new: (a: number, b: number, c: number, d: number, e: number, f: number) => void;
-  readonly keyimportinitiator_setup: (a: number, b: number) => void;
-  readonly keyimportinitiator_outputMessage: (a: number) => number;
-  readonly keyimportinitiator_inputMessage: (a: number, b: number, c: number) => number;
-  readonly keyimportinitiator_finish: (a: number, b: number) => void;
   readonly __wbg_keygensession_free: (a: number, b: number) => void;
-  readonly keygensession_new: (a: number, b: number, c: number, d: number, e: number) => void;
-  readonly keygensession_refresh: (a: number, b: number, c: number, d: number, e: number, f: number) => void;
-  readonly keygensession_setup: (a: number, b: number, c: number, d: number, e: number, f: number) => void;
-  readonly keygensession_setupKeyId: (a: number, b: number, c: number) => void;
+  readonly keygensession_new: (a: number, b: number, c: number, d: number) => [number, number, number];
+  readonly keygensession_refresh: (a: number, b: number, c: number, d: number, e: number) => [number, number, number];
+  readonly keygensession_migrate: (a: number, b: number, c: number, d: number, e: number, f: number, g: number, h: number, i: number, j: number) => [number, number, number];
+  readonly keygensession_setup: (a: number, b: number, c: number, d: number, e: number) => [number, number];
+  readonly keygensession_setupKeyId: (a: number, b: number) => [number, number];
   readonly keygensession_outputMessage: (a: number) => number;
   readonly keygensession_inputMessage: (a: number, b: number, c: number) => number;
-  readonly keygensession_finish: (a: number, b: number) => void;
-  readonly __wbg_keyimportersession_free: (a: number, b: number) => void;
-  readonly keyimportsession_new: (a: number, b: number, c: number, d: number, e: number) => void;
-  readonly keyimportsession_outputMessage: (a: number) => number;
-  readonly keyimportsession_inputMessage: (a: number, b: number, c: number) => number;
-  readonly keyimportsession_finish: (a: number, b: number) => void;
-  readonly __wbg_keyshare_free: (a: number, b: number) => void;
-  readonly keyshare_publicKey: (a: number, b: number) => void;
-  readonly keyshare_keyId: (a: number, b: number) => void;
-  readonly keyshare_toBytes: (a: number, b: number) => void;
-  readonly keyshare_fromBytes: (a: number, b: number, c: number) => void;
-  readonly keyshare_rootChainCode: (a: number, b: number) => void;
-  readonly qcsession_new: (a: number, b: number, c: number, d: number, e: number, f: number) => void;
-  readonly qcsession_setup: (a: number, b: number, c: number, d: number, e: number, f: number, g: number, h: number, i: number) => void;
-  readonly qcsession_setupKeyId: (a: number, b: number, c: number) => void;
-  readonly qcsession_finish: (a: number, b: number) => void;
-  readonly qcsession_inputMessage: (a: number, b: number, c: number) => number;
-  readonly __wbg_qcsession_free: (a: number, b: number) => void;
-  readonly qcsession_outputMessage: (a: number) => number;
+  readonly keygensession_finish: (a: number) => [number, number, number];
   readonly __wbg_signsession_free: (a: number, b: number) => void;
-  readonly signsession_new: (a: number, b: number, c: number, d: number, e: number) => void;
-  readonly signsession_setup: (a: number, b: number, c: number, d: number, e: number, f: number, g: number, h: number, i: number) => void;
-  readonly signsession_setupMessageHash: (a: number, b: number, c: number) => void;
-  readonly signsession_setupKeyId: (a: number, b: number, c: number) => void;
+  readonly signsession_new: (a: any, b: number, c: number, d: number) => [number, number, number];
+  readonly signsession_setup: (a: number, b: number, c: number, d: number, e: number, f: number, g: number, h: number) => [number, number, number];
+  readonly signsession_setupMessageHash: (a: number, b: number) => [number, number];
   readonly signsession_outputMessage: (a: number) => number;
   readonly signsession_inputMessage: (a: number, b: number, c: number) => number;
-  readonly signsession_finish: (a: number, b: number) => void;
+  readonly signsession_finish: (a: number) => [number, number, number, number];
   readonly __wbg_message_free: (a: number, b: number) => void;
-  readonly message_body: (a: number, b: number) => void;
-  readonly message_receivers: (a: number, b: number) => void;
+  readonly message_body: (a: number) => [number, number];
+  readonly message_receivers: (a: number) => [number, number];
+  readonly signsession_setupKeyId: (a: number, b: number) => [number, number];
+  readonly __wbg_keyexportsession_free: (a: number, b: number) => void;
+  readonly keyexportsession_new: (a: number, b: number, c: number) => number;
+  readonly keyexportsession_setup: (a: number) => [number, number];
+  readonly keyexportsession_inputMessage: (a: number, b: number, c: number) => number;
+  readonly keyexportsession_finish: (a: number) => [number, number, number, number];
+  readonly keyexportsession_exportShare: (a: number, b: number, c: number, d: number, e: number) => [number, number, number];
+  readonly __wbg_keyshare_free: (a: number, b: number) => void;
+  readonly keyshare_publicKey: (a: number) => [number, number];
+  readonly keyshare_keyId: (a: number) => [number, number];
+  readonly keyshare_toBytes: (a: number) => [number, number];
+  readonly keyshare_fromBytes: (a: number, b: number) => [number, number, number];
+  readonly keyshare_rootChainCode: (a: number) => [number, number];
+  readonly __wbg_qcsession_free: (a: number, b: number) => void;
+  readonly qcsession_new: (a: number, b: number, c: number, d: number, e: number) => [number, number, number];
+  readonly qcsession_setup: (a: number, b: number, c: number, d: number, e: number, f: number, g: number, h: number) => [number, number];
+  readonly qcsession_setupKeyId: (a: number, b: number) => [number, number];
+  readonly qcsession_outputMessage: (a: number) => number;
+  readonly qcsession_inputMessage: (a: number, b: number, c: number) => number;
+  readonly qcsession_finish: (a: number) => [number, number, number];
+  readonly __wbg_keyimportersession_free: (a: number, b: number) => void;
+  readonly keyimportsession_new: (a: number, b: number, c: number, d: number) => [number, number, number];
+  readonly keyimportsession_outputMessage: (a: number) => number;
+  readonly keyimportsession_inputMessage: (a: number, b: number, c: number) => number;
+  readonly keyimportsession_finish: (a: number) => [number, number, number];
+  readonly __wbg_keyimportinitiator_free: (a: number, b: number) => void;
+  readonly keyimportinitiator_new: (a: number, b: number, c: number, d: number, e: number, f: number, g: number) => [number, number, number];
+  readonly keyimportinitiator_setup: (a: number) => [number, number];
+  readonly keyimportinitiator_outputMessage: (a: number) => number;
+  readonly keyimportinitiator_inputMessage: (a: number, b: number, c: number) => number;
+  readonly keyimportinitiator_finish: (a: number) => [number, number, number];
   readonly __wbindgen_exn_store: (a: number) => void;
+  readonly __externref_table_alloc: () => number;
+  readonly __wbindgen_export_2: WebAssembly.Table;
   readonly __wbindgen_malloc: (a: number, b: number) => number;
   readonly __wbindgen_realloc: (a: number, b: number, c: number, d: number) => number;
-  readonly __wbindgen_add_to_stack_pointer: (a: number) => number;
+  readonly __externref_table_dealloc: (a: number) => void;
   readonly __wbindgen_free: (a: number, b: number, c: number) => void;
+  readonly __externref_drop_slice: (a: number, b: number) => void;
+  readonly __wbindgen_start: () => void;
 }
 
 export type SyncInitInput = BufferSource | WebAssembly.Module;

@@ -13,28 +13,23 @@ export const fromStorageCoin = (coin: storage.Coin): AccountCoin => {
     chain: coin.chain as Chain,
     address: coin.address,
     ticker: coin.ticker,
-    logo: coin.logo,
-    priceProviderId: coin.price_provider_id,
+    logo: coin.logo || undefined,
+    priceProviderId: coin.price_provider_id || undefined,
     decimals: coin.decimals,
   }
 }
 
-type ToStorageCoinInput = AccountCoin & {
-  hexPublicKey: string
-}
-
-export const toStorageCoin = (coin: ToStorageCoinInput): storage.Coin => {
+export const toStorageCoin = (coin: AccountCoin): storage.Coin => {
   const isNativeToken = isFeeCoin(coin)
 
   return {
     id: accountCoinKeyToString(coin),
     chain: coin.chain,
     address: coin.address,
-    hex_public_key: coin.hexPublicKey,
     ticker: coin.ticker,
     contract_address: isNativeToken ? '' : coin.id,
     is_native_token: isNativeToken,
-    logo: coin.logo,
+    logo: coin.logo ?? '',
     price_provider_id: coin.priceProviderId ?? '',
     decimals: coin.decimals,
   }

@@ -14,12 +14,14 @@ import {
 } from '../encodingAndEncryption'
 import { getKeygenThreshold } from '../getKeygenThreshold'
 import { getMessageHash } from '../getMessageHash'
+import { KeygenType } from '../keygen/KeygenType'
 import { combineReshareCommittee } from '../reshareCommittee'
 import { sendRelayMessage } from '../sendRelayMessage'
 import { sleep } from '../sleep'
 import { uploadSetupMessage } from '../uploadSetupMessage'
 
 export class DKLS {
+  private readonly keygenType: KeygenType
   private readonly isInitiateDevice: boolean
   private readonly serverURL: string
   private readonly sessionId: string
@@ -31,15 +33,23 @@ export class DKLS {
   private sequenceNo: number = 0
   private cache: Record<string, string> = {}
   private setupMessage: Uint8Array = new Uint8Array()
+  private readonly localUI?: string
+  private readonly publicKey?: string
+  private readonly chainCode?: string
   constructor(
+    keygenType: KeygenType,
     isInitiateDevice: boolean,
     serverURL: string,
     sessionId: string,
     localPartyId: string,
     keygenCommittee: string[],
     oldKeygenCommittee: string[],
-    hexEncryptionKey: string
+    hexEncryptionKey: string,
+    localUI?: string,
+    publicKey?: string,
+    chainCode?: string
   ) {
+    this.keygenType = keygenType
     this.isInitiateDevice = isInitiateDevice
     this.serverURL = serverURL
     this.sessionId = sessionId
@@ -47,6 +57,9 @@ export class DKLS {
     this.keygenCommittee = keygenCommittee
     this.oldKeygenCommittee = oldKeygenCommittee
     this.hexEncryptionKey = hexEncryptionKey
+    this.publicKey = publicKey
+    this.chainCode = chainCode
+    this.localUI = localUI?.padEnd(64, '0')
   }
 
   private async processOutbound(session: KeygenSession | QcSession) {
@@ -172,7 +185,22 @@ export class DKLS {
           this.hexEncryptionKey
         )
       }
-      const session = new KeygenSession(this.setupMessage, this.localPartyId)
+      let session: KeygenSession
+      if (this.keygenType === 'create') {
+        session = new KeygenSession(this.setupMessage, this.localPartyId)
+      } else if (this.keygenType === 'migrate') {
+        session = KeygenSession.migrate(
+          this.setupMessage,
+          this.localPartyId,
+          Buffer.from(this.localUI || '', 'hex'),
+          Buffer.from(this.publicKey || '', 'hex'),
+          Buffer.from(this.chainCode || '', 'hex')
+        )
+        console.log('migrate session:', session)
+      } else {
+        throw new Error('invalid keygen type')
+      }
+
       const outbound = this.processOutbound(session)
       const inbound = this.processInbound(session)
       const [, inboundResult] = await Promise.all([outbound, inbound])
@@ -184,6 +212,7 @@ export class DKLS {
           chaincode: Buffer.from(keyShare.rootChainCode()).toString('hex'),
         }
       }
+      throw new Error('DKLS keygen failed')
     } catch (error) {
       if (error instanceof Error) {
         console.error('DKLS keygen error:', error)
@@ -198,13 +227,12 @@ export class DKLS {
     for (let i = 0; i < 3; i++) {
       try {
         const result = await this.startKeygen(i)
-        if (result !== undefined) {
-          return result
-        }
+        return result
       } catch (error) {
         console.error('DKLS keygen error:', error)
       }
     }
+    throw new Error('DKLS keygen failed')
   }
   public getSetupMessage() {
     return this.setupMessage
@@ -287,6 +315,7 @@ export class DKLS {
             chaincode: Buffer.from(keyShare.rootChainCode()).toString('hex'),
           }
         }
+        throw new Error('DKLS reshare failed')
       } finally {
         session.free()
       }
@@ -304,12 +333,11 @@ export class DKLS {
     for (let i = 0; i < 3; i++) {
       try {
         const result = await this.startReshare(keyshare, i)
-        if (result !== undefined) {
-          return result
-        }
+        return result
       } catch (error) {
         console.error('DKLS reshare error:', error)
       }
     }
+    throw new Error('DKLS reshare failed')
   }
 }

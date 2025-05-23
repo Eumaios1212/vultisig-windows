@@ -1,8 +1,8 @@
 {
   "compilerOptions": {
-    "target": "ES2020",
+    "target": "ES2021",
     "useDefineForClassFields": true,
-    "lib": ["ES2020", "DOM", "DOM.Iterable"],
+    "lib": ["ES2021", "DOM", "DOM.Iterable"],
     "module": "ESNext",
     "skipLibCheck": true,
 
@@ -18,5 +18,10 @@
     "strict": true,
     "noFallthroughCasesInSwitch": true
   },
-  "include": ["src", "index.d.ts", "postcss.config.js", "manifest.config.js"]
+  "include": [
+    "src",
+    "index.d.ts",
+    "postcss.config.js",
+    "../../core/ui/i18n/**/*.d.ts"
+  ]
 }

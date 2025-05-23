@@ -1,12 +1,12 @@
-import { attempt } from '@lib/utils/attempt'
+import { useCore } from '@core/ui/state/core'
+import { attempt, withFallback } from '@lib/utils/attempt'
 import { useQuery } from '@tanstack/react-query'
 
-import buildInfo from '../../../../build.json'
 import { LATEST_VERSION_QUERY_KEY, VULTISIG_RELEASES_API } from './constants'
 import { isValidVersion, isVersionNewer } from './utils'
 
 const useVersionCheck = () => {
-  const localVersion = buildInfo?.version
+  const { version } = useCore()
 
   const {
     data: latestVersionData,
@@ -33,19 +33,20 @@ const useVersionCheck = () => {
 
   const latestVersion = latestVersionData?.version
 
-  const updateAvailable = attempt(() => {
-    return isVersionNewer({
-      remoteVersion: latestVersion,
-      localVersion,
-    })
-  }, false)
+  const updateAvailable = withFallback(
+    attempt(() => {
+      return isVersionNewer({
+        remoteVersion: latestVersion,
+        localVersion: version,
+      })
+    }),
+    false
+  )
 
   return {
-    localVersion,
     latestVersion,
     updateAvailable,
     remoteError,
-    isLocalVersionValid: isValidVersion(localVersion),
     isLoading: isRemoteFetching,
   }
 }

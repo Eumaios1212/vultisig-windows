@@ -1,36 +1,41 @@
 import api from '@clients/extension/src/utils/api'
 import {
-  ChainProps,
   TransactionDetails,
   TransactionType,
 } from '@clients/extension/src/utils/interfaces'
+import { Chain } from '@core/chain/Chain'
 import { chainFeeCoin } from '@core/chain/coin/chainFeeCoin'
+import { ethers } from 'ethers'
 
-const transactionHandlers = {
-  Keplr: (
-    tx: TransactionType.Keplr,
-    chain: ChainProps
-  ): TransactionDetails => ({
+type TransactionHandlers = {
+  [K in TransactionType.WalletTransaction['txType']]: (
+    tx: Extract<TransactionType.WalletTransaction, { txType: K }>,
+    chain: Chain
+  ) => Promise<TransactionDetails> | TransactionDetails
+}
+
+const transactionHandlers: TransactionHandlers = {
+  Keplr: (tx, chain) => ({
     asset: {
-      chain: chain.chain,
+      chain: chain,
       ticker: tx.amount[0].denom,
     },
-    amount: { amount: tx.amount[0].amount, decimals: chain.decimals },
+    amount: {
+      amount: tx.amount[0].amount,
+      decimals: chainFeeCoin[chain].decimals,
+    },
     from: tx.from_address,
     to: tx.to_address,
   }),
 
-  Phantom: async (
-    tx: TransactionType.Phantom,
-    chain: ChainProps
-  ): Promise<TransactionDetails> => {
+  Phantom: async (tx, chain) => {
     if (tx.asset.ticker && tx.asset.ticker === chainFeeCoin.Solana.ticker) {
       return {
         asset: {
-          chain: chain.chain,
+          chain: chain,
           ticker: tx.asset.ticker,
         },
-        amount: { amount: tx.amount, decimals: chain.decimals },
+        amount: { amount: tx.amount, decimals: chainFeeCoin[chain].decimals },
         from: tx.from,
         to: tx.to,
       }
@@ -43,7 +48,7 @@ const transactionHandlers = {
 
         return {
           asset: {
-            chain: chain.chain,
+            chain: chain,
             ticker: token.symbol,
             symbol: token.name,
             mint: tx.asset.mint,
@@ -53,28 +58,36 @@ const transactionHandlers = {
           to: tx.to,
         }
       } catch (err) {
-        throw Error(`Could not fetch solana token info: ${err}`)
+        throw new Error(`Could not fetch Solana token info: ${err}`)
       }
     }
   },
 
-  MetaMask: (
-    tx: TransactionType.MetaMask,
-    chain: ChainProps
-  ): TransactionDetails => ({
+  MetaMask: (tx, chain) => ({
     from: tx.from,
     to: tx.to,
     asset: {
-      chain: chain.chain,
-      ticker: chain.ticker,
+      chain: chain,
+      ticker: chainFeeCoin[chain].ticker,
     },
     amount: tx.value
-      ? { amount: tx.value, decimals: chain.decimals }
+      ? { amount: tx.value, decimals: chainFeeCoin[chain].decimals }
       : undefined,
     data: tx.data,
+    gasSettings: {
+      maxFeePerGas: ethers.isHexString(tx.maxFeePerGas)
+        ? ethers.toBigInt(tx.maxFeePerGas).toString()
+        : tx.maxFeePerGas,
+      maxPriorityFeePerGas: ethers.isHexString(tx.maxPriorityFeePerGas)
+        ? ethers.toBigInt(tx.maxPriorityFeePerGas).toString()
+        : tx.maxPriorityFeePerGas,
+      gasLimit: ethers.isHexString(tx.gas)
+        ? ethers.toBigInt(tx.gas).toString()
+        : tx.gas,
+    },
   }),
 
-  Ctrl: (tx: TransactionType.Ctrl): TransactionDetails => ({
+  Ctrl: tx => ({
     asset: tx.asset,
     data: tx.memo,
     from: tx.from,
@@ -83,31 +96,35 @@ const transactionHandlers = {
     amount: tx.amount,
   }),
 
-  Vultisig: (tx: TransactionType.Vultisig): TransactionDetails => ({
+  Vultisig: tx => ({
     ...tx,
   }),
 }
 
 export const getStandardTransactionDetails = async (
   tx: TransactionType.WalletTransaction,
-  chain: ChainProps
+  chain: Chain
 ): Promise<TransactionDetails> => {
   if (!tx || !tx.txType) {
     throw new Error('Invalid transaction object or missing txType')
   }
 
-  switch (tx.txType) {
-    case 'Keplr':
-      return transactionHandlers.Keplr(tx, chain)
-    case 'Phantom':
-      return await transactionHandlers.Phantom(tx, chain)
-    case 'MetaMask':
-      return transactionHandlers.MetaMask(tx, chain)
-    case 'Ctrl':
-      return transactionHandlers.Ctrl(tx)
-    case 'Vultisig':
-      return transactionHandlers.Vultisig(tx)
-    default:
-      throw new Error(`Unsupported transaction type`)
+  const handler = transactionHandlers[tx.txType]
+  if (!handler) {
+    throw new Error(`Unsupported transaction type: ${tx.txType}`)
   }
+
+  return handler(tx as any, chain) // TypeScript ensures correctness due to TransactionHandlers type
+}
+
+export const isBasicTransaction = (
+  transaction: Record<string, any> | null
+): boolean => {
+  return (
+    typeof transaction === 'object' &&
+    transaction !== null &&
+    'from' in transaction &&
+    'to' in transaction &&
+    'value' in transaction
+  )
 }

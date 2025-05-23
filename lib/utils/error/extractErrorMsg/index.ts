@@ -1,5 +1,4 @@
-import { attempt } from '../../attempt'
-import { getUserFriendlyErrorMessageIfExistent } from '../getUserFriendlyErrorMessageIfExistent'
+import { attempt, withFallback } from '../../attempt'
 
 /**
  * Extracts and returns a human-readable error message from an unknown error object.
@@ -9,7 +8,7 @@ import { getUserFriendlyErrorMessageIfExistent } from '../getUserFriendlyErrorMe
  */
 export const extractErrorMsg = (err: unknown): string => {
   if (typeof err === 'string') {
-    return getUserFriendlyErrorMessageIfExistent(err)
+    return err
   }
 
   if (typeof err === 'number' || typeof err === 'boolean') {
@@ -20,5 +19,8 @@ export const extractErrorMsg = (err: unknown): string => {
     return extractErrorMsg((err as { message: unknown }).message)
   }
 
-  return attempt(() => JSON.stringify(err), '')
+  return withFallback(
+    attempt(() => JSON.stringify(err)),
+    'Unknown Error'
+  )
 }

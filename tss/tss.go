@@ -41,11 +41,12 @@ func (t *TssService) Startup(ctx context.Context) {
 	t.ctx = ctx
 }
 
-// GetDerivedPubKey returns the derived public key
-func (t *TssService) GetDerivedPubKey(hexPubKey, hexChainCode, path string, isEdDSA bool) (string, error) {
-	return mtss.GetDerivedPubKey(hexPubKey, hexChainCode, path, isEdDSA)
+func (t *TssService) GetLocalUIEcdsa(keyshare string) (string, error) {
+	return mtss.GetLocalUIEcdsa(keyshare)
 }
-
+func (t *TssService) GetLocalUIEdDSA(keyshare string) (string, error) {
+	return mtss.GetLocalUIEddsa(keyshare)
+}
 func (t *TssService) StartKeygen(name, localPartyID, sessionID, hexChainCode, hexEncryptionKey string, serverURL string) (*storage.Vault, error) {
 	if serverURL == "" {
 		return nil, fmt.Errorf("serverURL is empty")
@@ -69,8 +70,8 @@ func (t *TssService) StartKeygen(name, localPartyID, sessionID, hexChainCode, he
 	if err != nil {
 		return nil, fmt.Errorf("failed to create localStateAccessor: %w", err)
 	}
-	runtime.EventsEmit(t.ctx, "PrepareVault")
-	tssServerImp, err := t.createTSSService(serverURL, sessionID, hexEncryptionKey, localStateAccessor, true)
+	runtime.EventsEmit(t.ctx, "prepareVault")
+	tssServerImp, err := t.createTSSService(serverURL, sessionID, hexEncryptionKey, localStateAccessor, true, "")
 	if err != nil {
 		return nil, fmt.Errorf("failed to create TSS service: %w", err)
 	}
@@ -143,13 +144,14 @@ func (t *TssService) StartKeygen(name, localPartyID, sessionID, hexChainCode, he
 		Order:         0,
 		IsBackedUp:    false,
 		Coins:         []storage.Coin{},
+		LibType:       "GG20",
 	}
 
 	return vault, nil
 }
 
-func (t *TssService) createTSSService(serverURL, Session, HexEncryptionKey string, localStateAccessor mtss.LocalStateAccessor, createPreParam bool) (*mtss.ServiceImpl, error) {
-	messenger, err := relay.NewMessengerImp(serverURL, Session, HexEncryptionKey)
+func (t *TssService) createTSSService(serverURL, Session, HexEncryptionKey string, localStateAccessor mtss.LocalStateAccessor, createPreParam bool, messageID string) (*mtss.ServiceImpl, error) {
+	messenger, err := relay.NewMessengerImp(serverURL, Session, HexEncryptionKey, messageID)
 	if err != nil {
 		return nil, fmt.Errorf("create messenger: %w", err)
 	}
@@ -332,7 +334,7 @@ func (t *TssService) keygenWithRetry(localPartyID, hexChainCode string, partiesJ
 }
 
 func (t *TssService) generateECDSAKey(tssService mtss.Service, key, hexChainCode string, partiesJoined []string) (*mtss.KeygenResponse, error) {
-	runtime.EventsEmit(t.ctx, "ECDSA")
+	runtime.EventsEmit(t.ctx, "ecdsa")
 	t.Logger.WithFields(logrus.Fields{
 		"key":            key,
 		"chain_code":     hexChainCode,
@@ -355,7 +357,7 @@ func (t *TssService) generateECDSAKey(tssService mtss.Service, key, hexChainCode
 }
 
 func (t *TssService) generateEDDSAKey(tssService mtss.Service, key, hexChainCode string, partiesJoined []string) (*mtss.KeygenResponse, error) {
-	runtime.EventsEmit(t.ctx, "EdDSA")
+	runtime.EventsEmit(t.ctx, "eddsa")
 	t.Logger.WithFields(logrus.Fields{
 		"key":            key,
 		"chain_code":     hexChainCode,

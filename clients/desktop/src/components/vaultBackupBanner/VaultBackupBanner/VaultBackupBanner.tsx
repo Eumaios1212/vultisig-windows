@@ -1,8 +1,8 @@
+import { ChevronRightIcon } from '@lib/ui/icons/ChevronRightIcon'
+import { TriangleAlertIcon } from '@lib/ui/icons/TriangleAlertIcon'
+import { Text } from '@lib/ui/text'
 import { useTranslation } from 'react-i18next'
 
-import { ChevronRightIcon } from '../../../lib/ui/icons/ChevronRightIcon'
-import { TriangleAlertIcon } from '../../../lib/ui/icons/TriangleAlertIcon'
-import { Text } from '../../../lib/ui/text'
 import { useAppNavigate } from '../../../navigation/hooks/useAppNavigate'
 import {
   ChevronIconWrapper,
@@ -15,7 +15,7 @@ const VaultBackupBanner = () => {
 
   return (
     <ContentWrapperButton
-      onClick={() => navigate('vaultBackup')}
+      onClick={() => navigate({ id: 'vaultBackup' })}
       data-testid="VaultBackupBanner-Content"
     >
       <TriangleAlertIcon height={24} width={24} />
@@ -23,7 +23,7 @@ const VaultBackupBanner = () => {
         {t('vault_backup_banner_title')}
       </Text>
       <ChevronIconWrapper>
-        <ChevronRightIcon size={24} />
+        <ChevronRightIcon fontSize={24} />
       </ChevronIconWrapper>
     </ContentWrapperButton>
   )

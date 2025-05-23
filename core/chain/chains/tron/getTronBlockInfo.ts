@@ -1,4 +1,4 @@
-import { Coin } from '@core/communication/vultisig/keysign/v1/coin_pb'
+import { Coin } from '@core/mpc/types/vultisig/keysign/v1/coin_pb'
 import { queryUrl } from '@lib/utils/query/queryUrl'
 
 interface TronBlockHeader {
@@ -153,5 +153,3 @@ async function getTriggerConstantContractFee(
 
   return totalSun.toString()
 }
-
-export { getTriggerConstantContractFee }

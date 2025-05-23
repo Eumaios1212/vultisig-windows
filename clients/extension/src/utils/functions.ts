@@ -7,6 +7,7 @@ import {
   Messaging,
   SendTransactionResponse,
 } from '@clients/extension/src/utils/interfaces'
+import { VersionedTransaction } from '@solana/web3.js'
 
 const isArray = (arr: any): arr is any[] => {
   return Array.isArray(arr)
@@ -26,25 +27,11 @@ const toSnake = (value: string): string => {
   return value.replace(/[A-Z]/g, letter => `_${letter.toLowerCase()}`)
 }
 
-export const bigintToByteArray = (bigNumber: bigint): Uint8Array => {
-  if (typeof bigNumber !== 'bigint' || bigNumber < 0n)
-    throw new Error('Input must be a non-negative BigInt.')
-
-  const bytes = []
-
-  while (bigNumber > 0n) {
-    bytes.unshift(Number(bigNumber & 0xffn))
-    bigNumber = bigNumber >> 8n
-  }
-
-  return new Uint8Array(bytes.length > 0 ? bytes : [0])
-}
-
 export const calculateWindowPosition = (
   currentWindow: chrome.windows.Window
 ) => {
   const height = 639
-  const width = 376
+  const width = 416
   let left = 0
   let top = 0
 
@@ -128,7 +115,9 @@ export const processBackgroundResponse = (
     case RequestMethod.METAMASK.ETH_SEND_TRANSACTION:
     case RequestMethod.VULTISIG.SEND_TRANSACTION:
     case RequestMethod.CTRL.DEPOSIT:
-    case RequestMethod.VULTISIG.DEPOSIT_TRANSACTION: {
+    case RequestMethod.VULTISIG.DEPOSIT_TRANSACTION:
+    case RequestMethod.METAMASK.PERSONAL_SIGN:
+    case RequestMethod.METAMASK.ETH_SIGN_TYPED_DATA_V4: {
       if (messageKey === MessageKey.SOLANA_REQUEST)
         return (result as SendTransactionResponse).raw
       return (result as SendTransactionResponse).txResponse
@@ -137,4 +126,14 @@ export const processBackgroundResponse = (
       return result
     }
   }
+}
+
+export function isVersionedTransaction(tx: any): tx is VersionedTransaction {
+  return (
+    typeof tx === 'object' &&
+    'version' in tx &&
+    typeof tx.version === 'number' &&
+    'message' in tx &&
+    'addressTableLookups' in tx.message
+  )
 }

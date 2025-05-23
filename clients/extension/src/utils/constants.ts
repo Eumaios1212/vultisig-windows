@@ -1,9 +1,5 @@
-import type {
-  CurrencyRef,
-  LanguageRef,
-} from '@clients/extension/src/utils/interfaces'
 import { Chain } from '@core/chain/Chain'
-import keyMirror from 'keymirror'
+
 export enum CosmosMsgType {
   MSG_SEND = 'cosmos-sdk/MsgSend',
 }
@@ -24,11 +20,6 @@ export enum MessageKey {
   VAULTS = 'vaults',
 }
 
-export enum SenderKey {
-  PAGE = 'page',
-  RELAY = 'relay',
-}
-
 export enum Currency {
   AUD = 'AUD',
   CAD = 'CAD',
@@ -43,21 +34,9 @@ export enum Currency {
 }
 
 export enum Instance {
-  ACCOUNTS = 'accounts',
+  CONNECT = 'connect',
   TRANSACTION = 'transaction',
-  VAULT = 'vault',
   VAULTS = 'vaults',
-}
-
-export enum Language {
-  CROATIA = 'hr',
-  DUTCH = 'nl',
-  ENGLISH = 'en',
-  GERMAN = 'de',
-  ITALIAN = 'it',
-  RUSSIAN = 'ru',
-  PORTUGUESE = 'pt',
-  SPANISH = 'es',
 }
 
 export enum EventMethod {
@@ -65,8 +44,6 @@ export enum EventMethod {
   CHAIN_CHANGED = 'chainChanged',
   CONNECT = 'connect',
   DISCONNECT = 'diconnect',
-  ERROR = 'ERROR',
-  MESSAGE = 'MESSAGE',
   NETWORK_CHANGED = 'networkChanged',
 }
 
@@ -150,64 +127,7 @@ export namespace RequestMethod {
   }
 }
 
-export const storageKey = keyMirror({
-  CURRENCY: true,
-  LANGUAGE: true,
-  VAULTS: true,
-})
-
-export const errorKey = keyMirror({
-  FAIL_TO_GET_ACCOUNTS: true,
-  FAIL_TO_GET_ADDRESS: true,
-  FAIL_TO_GET_VAULT: true,
-  FAIL_TO_GET_VAULTS: true,
-  FAIL_TO_GET_TRANSACTION: true,
-  FAIL_TO_INIT_WASM: true,
-  INVALID_CHAIN: true,
-  INVALID_EXTENSION: true,
-  INVALID_FILE: true,
-  INVALID_QRCODE: true,
-  INVALID_VAULT: true,
-})
-
-export const currencyName: CurrencyRef = {
-  [Currency.AUD]: 'Australian Dollar',
-  [Currency.CAD]: 'Canadian Dollar',
-  [Currency.CNY]: 'Chinese Yuan',
-  [Currency.EUR]: 'European Euro',
-  [Currency.GBP]: 'British Pound',
-  [Currency.JPY]: 'Japanese Yen',
-  [Currency.RUB]: 'Russian Ruble',
-  [Currency.SEK]: 'Swedish Krona',
-  [Currency.SGD]: 'Singapore Dollar',
-  [Currency.USD]: 'United States Dollar',
-}
-
-export const currencySymbol: CurrencyRef = {
-  [Currency.AUD]: 'A$',
-  [Currency.CAD]: 'C$',
-  [Currency.CNY]: '¥',
-  [Currency.EUR]: '€',
-  [Currency.GBP]: '£',
-  [Currency.JPY]: '¥',
-  [Currency.RUB]: '₽',
-  [Currency.SEK]: 'kr',
-  [Currency.SGD]: 'S$',
-  [Currency.USD]: '$',
-}
-
-export const languageName: LanguageRef = {
-  [Language.CROATIA]: 'Hrvatski',
-  [Language.DUTCH]: 'Dutch',
-  [Language.ENGLISH]: 'English',
-  [Language.GERMAN]: 'Deutsch',
-  [Language.ITALIAN]: 'Italiano',
-  [Language.PORTUGUESE]: 'Português',
-  [Language.RUSSIAN]: 'Русский',
-  [Language.SPANISH]: 'Espanol',
-}
-
-export const supportedChains: Record<Chain, boolean> = {
+const supportedChains: Record<Chain, boolean> = {
   [Chain.Arbitrum]: true,
   [Chain.Avalanche]: true,
   [Chain.Base]: true,
