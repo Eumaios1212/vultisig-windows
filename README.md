@@ -1,3 +1,7 @@
+# Overview
+Redefining crypto wallet security for the AI Agent era: Multi-chain, multi-factor, and the end of seed 
+phrases and Infrastructure for the bots
+
 # Vultisig Desktop & VultiConnect
 
 This monorepo contains two main components:
